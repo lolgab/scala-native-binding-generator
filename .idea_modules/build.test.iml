@@ -1,0 +1,30 @@
+<module type="JAVA_MODULE" version="4">
+    <component name="NewModuleRootManager">
+        <output url="file://$MODULE_DIR$/../out/build/test/compile/dest/classes"/>
+        <exclude-output/>
+        <content url="file://$MODULE_DIR$/../out/build/test/generatedSources/dest"/>
+        <content url="file://$MODULE_DIR$/../test">
+            <sourceFolder url="file://$MODULE_DIR$/../test/src" isTestSource="false"/>
+            <sourceFolder url="file://$MODULE_DIR$/../test/resources" isTestSource="false" type="java-resource"/>
+            <excludeFolder url="file://$MODULE_DIR$/../test/target"/>
+        </content>
+        <orderEntry type="inheritedJdk"/>
+        <orderEntry type="sourceFolder" forTests="false"/>
+        <orderEntry type="library" name="scala-sdk-2.12.4" level="application"/>
+        <orderEntry type="library" name="fastparse-utils_2.12-1.0.0-sources.jar" level="project"/>
+        <orderEntry type="library" name="fastparse-utils_2.12-1.0.0.jar" level="project"/>
+        <orderEntry type="library" name="fastparse_2.12-1.0.0-sources.jar" level="project"/>
+        <orderEntry type="library" name="fastparse_2.12-1.0.0.jar" level="project"/>
+        <orderEntry type="library" name="scala-library-2.12.4-sources.jar" level="project"/>
+        <orderEntry type="library" name="scala-library-2.12.4.jar" level="project"/>
+        <orderEntry type="library" name="scala-reflect-2.12.4-sources.jar" level="project"/>
+        <orderEntry type="library" name="scala-reflect-2.12.4.jar" level="project"/>
+        <orderEntry type="library" name="sourcecode_2.12-0.1.4-sources.jar" level="project"/>
+        <orderEntry type="library" name="sourcecode_2.12-0.1.4.jar" level="project"/>
+        <orderEntry type="library" name="test-interface-1.0-sources.jar" level="project"/>
+        <orderEntry type="library" name="test-interface-1.0.jar" level="project"/>
+        <orderEntry type="library" name="utest_2.12-0.6.4-sources.jar" level="project"/>
+        <orderEntry type="library" name="utest_2.12-0.6.4.jar" level="project"/>
+        <orderEntry type="module" module-name="build" exported=""/>
+    </component>
+</module>
