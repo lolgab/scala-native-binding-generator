@@ -1,8 +1,8 @@
-case class Parameter(t: Type, name: Option[String]) {
-  def nameString(index: Int): String = {
+case class Parameter(t: Type, name: Option[Identifier]) {
+  def nameIdentifier(index: Int): Identifier = {
     name match {
       case Some(n) => n
-      case None    => s"param$index"
+      case None    => Identifier(s"param$index")
     }
   }
 }

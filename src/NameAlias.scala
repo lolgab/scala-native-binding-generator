@@ -1,3 +1,3 @@
-case class NameAlias(oldN: String, newN: String) extends Definition {
-  def toNative: String = s"type $newN = $oldN"
+case class NameAlias(name: Identifier, newName: Identifier) extends Definition {
+  override def toString: String = s"type $newName = $name"
 }

@@ -1,6 +1,9 @@
-sealed trait Type extends Definition
+sealed trait Type extends HasNative {
+  def cyclicReference: Boolean
+}
 
-case class VariableType(types: Seq[String], pointerCount: Int) extends Type {
+case class VariableType(types: Seq[String], pointerCount: Int, cyclicReference: Boolean = false)
+    extends Type {
   val resType = {
     implicit val seq: Seq[String]                  = types.sorted
     def cmp(s: String*)(implicit seq: Seq[String]) = s.sorted == seq
@@ -15,10 +18,10 @@ case class VariableType(types: Seq[String], pointerCount: Int) extends Type {
     else if (cmp("unsigned", "short")) "CUnsignedShort"
     else if (cmp("int")) "CInt"
     else if (cmp("long", "int")) "CLongInt"
-    else if (cmp("unsigned", "int")) "CUnsignedInt"
+    else if (cmp("unsigned", "int") || cmp("uint32_t")) "CUnsignedInt"
     else if (cmp("long", "int", "unsigned")) "CUnsignedLongInt"
     else if (cmp("long")) "CLong"
-    else if (cmp("long", "unsigned")) "CUnsignedLong"
+    else if (cmp("long", "unsigned") || cmp("uint64_t")) "CUnsignedLong"
     else if (cmp("long", "long")) "CLongLong"
     else if (cmp("unsigned", "long", "long")) "CUnsignedLongLong"
     else if (cmp("size_t")) "CSize"
@@ -34,7 +37,7 @@ case class VariableType(types: Seq[String], pointerCount: Int) extends Type {
   val ptrCount = if (resType == "CString") pointerCount - 1 else pointerCount
   (resType, ptrCount)
 
-  def toNative: String = {
+  override def toString: String = {
     def loop(s: String, i: Int): String =
       if (i == 0) s
       else loop(s"Ptr[$s]", i - 1)
@@ -43,8 +46,11 @@ case class VariableType(types: Seq[String], pointerCount: Int) extends Type {
 }
 
 case class FunctionType(returnType: Type, parameters: Seq[Type]) extends Type {
-  def parametersString = parameters.map(_.toNative).mkString(", ")
+  override def cyclicReference: Boolean =
+    parameters.foldLeft(returnType.cyclicReference)(_ || _.cyclicReference)
 
-  def toNative: String =
-    s"CFunctionPtr${parameters.length}[$parametersString, ${returnType.toNative}]"
+  def parametersString = parameters.map(_.toString).mkString(", ")
+
+  override def toString: String =
+    s"CFunctionPtr${parameters.length}[$parametersString, $returnType]"
 }

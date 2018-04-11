@@ -1,3 +1,3 @@
-trait Definition {
-  def toNative: String
+trait Definition extends HasNative {
+  def name: Identifier
 }

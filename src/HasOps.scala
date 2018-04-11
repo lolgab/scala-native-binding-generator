@@ -1,3 +1,3 @@
 trait HasOps extends Definition {
-  def toNativeOps: String
+  def opsString: String
 }

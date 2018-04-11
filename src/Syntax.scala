@@ -9,18 +9,30 @@ object WithSpaces {
   import WithoutSpaces._
   import space._
 
+  val identifier    = id.!.map(Identifier.apply)
+  val optIdentifier = id.?.!.map(Identifier.apply)
+
   val pointer = P("*".rep.!.map(_.count(_ == '*')))
 
   val variableType =
     P((id.! ~ (id.! ~ &(id)).rep) ~ pointer).map(t => VariableType(t._1 +: t._2, t._3))
 
-  val functionPtrParamenter =
-    P(variableType ~ "(" ~ "*" ~ id.! ~ ")" ~ "(" ~ functionParameters ~ ")").map {
-      case (returnType, name, parameters) =>
-        Parameter(FunctionType(returnType, parameters.map(_.t)), Some(name))
-    }
+  val functionPtr = P(variableType ~ "(" ~ "*" ~ identifier ~ ")" ~ "(" ~ functionParameters ~ ")")
 
-  val variableParameter = P(variableType ~ id.!.?).map(Parameter.tupled)
+  val functionPtrParamenter = functionPtr.map {
+    case (returnType, name, parameters) =>
+      Parameter(FunctionType(returnType, parameters.map(_.t)), Some(name))
+  }
+
+  val array = P("[" ~ digit.rep.! ~ "]").map(_.toInt)
+
+  val variableParameter = P(variableType ~ identifier.? ~ array.?)
+    .map(
+      t =>
+        if (t._3.isDefined)
+          (t._1.copy(pointerCount = t._1.pointerCount + 1), t._2)
+        else (t._1, t._2))
+    .map(Parameter.tupled)
 
   val functionParameter = P(functionPtrParamenter | variableParameter)
 
@@ -33,40 +45,62 @@ object WithSpaces {
         case (Some(t), s) => t +: s
       }
 
-  val functionDefinition =
-    P("extern".? ~ variableType ~ id.! ~ "(" ~ (voidParameter | functionParameters) ~ ")" ~ ";")
+  val functionDefinition: Parser[Seq[Definition]] =
+    P("extern".? ~ variableType ~ identifier ~ "(" ~ (voidParameter | functionParameters) ~ ")" ~ ";")
       .map(CFunction.tupled)
+      .map(Seq(_))
 
   val structComponent = P(functionParameter ~ ";")
 
-  val enumComponent = P(id.! ~ ("=" ~ (!"," ~ AnyChar).rep.!).? ~ ",")
+  val enumComponent = P(identifier ~ ("=" ~ (!"," ~ AnyChar).rep.!).? ~ ",")
 
   val structBraces = P("{" ~ structComponent.rep ~ "}")
 
   val enumBraces = P("{" ~ enumComponent.rep ~ "}")
 
-  val structDefinition =
-    P("struct" ~ id.?.! ~ structBraces ~ ";").map(Struct.tupled)
+  val structDefinition: Parser[Seq[Struct]] =
+    P("struct" ~ identifier ~ structBraces ~ ";").map(Struct.tupled).map(Seq(_))
 
-  val enumDefinition =
-    P("enum" ~ id.?.! ~ enumBraces ~ ";").map(Enum.tupled)
+  val enumDefinition: Parser[Seq[Definition]] =
+    P("enum" ~ optIdentifier ~ enumBraces ~ ";").map(Enum.tupled).map(Seq(_))
 
-  val typeDefStructDefinition =
-    P("typedef" ~ "struct" ~ id.? ~ structBraces ~ id.! ~ ";").map(t => Struct(t._2, t._1))
+  val typeDefStructDefinition: Parser[Seq[Definition]] =
+    P("typedef" ~ "struct" ~ identifier.? ~ structBraces ~ identifier ~ ";").map(t =>
+      t._1 match {
+        case Some(name) => Seq(Struct(name, t._2), NameAlias(name, t._3))
+        case None       => Seq(Struct(t._3, t._2))
+    })
 
-  val typeDefEnumDefinition =
-    P("typedef" ~ "enum" ~ id.? ~ enumBraces ~ id.! ~ ";").map(t => Enum(t._2, t._1))
+  val typeDefFunctionPtrDefinition: Parser[Seq[Definition]] =
+    P("typedef" ~ functionPtr ~ ";").map {
+      case (retType, name, params) =>
+        Seq(FunctionPtrDefinition(FunctionType(retType, params.map(_.t)), name))
+    }
 
-  val typeDefStructEnumAlias = P("typedef" ~ ("struct" | "enum") ~ id.! ~ id.! ~ ";")
-    .map(NameAlias.tupled) /*{ // TODO remove useless typealiases
-    case (oldN, newN) =>
-      if (oldN == newN) None else Some(TypeAlias(oldN, newN))
-  }*/
+  val typeDefEnumDefinition: Parser[Seq[Definition]] =
+    P("typedef" ~ "enum" ~ optIdentifier ~ enumBraces ~ identifier ~ ";").map(t =>
+      t._1 match {
+        case Identifier("") => Seq(Enum(t._3, t._2))
+        case name           => Seq(Enum(t._1, t._2), NameAlias(name, t._3))
+    })
 
-  val typeDefTypeAlias = P("typedef" ~ variableType ~ id.! ~ ";").map(TypeAlias.tupled)
+  val typeDefStructEnumAlias: Parser[Seq[Definition]] =
+    P("typedef" ~ ("struct" | "enum") ~ identifier ~ identifier ~ ";")
+      .map(NameAlias.tupled)
+      .map(Seq(_))
 
-  val exprContent: Parser[Definition] = P(
-    functionDefinition | typeDefStructDefinition | typeDefEnumDefinition | structDefinition | enumDefinition | typeDefStructEnumAlias | typeDefTypeAlias)
+  val typeDefTypeAlias: Parser[Seq[Definition]] =
+    P("typedef" ~ variableType ~ identifier ~ ";").map(TypeAlias.tupled).map(Seq(_))
+
+  val exprContent: Parser[Seq[Definition]] = P(
+    functionDefinition |
+      typeDefStructDefinition |
+      typeDefEnumDefinition |
+      structDefinition |
+      enumDefinition |
+      typeDefStructEnumAlias |
+      typeDefTypeAlias |
+      typeDefFunctionPtrDefinition)
 
   val expr = P(WithoutSpaces.space ~ exprContent.rep ~ WithoutSpaces.space ~ End)
 }

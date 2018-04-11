@@ -23,10 +23,14 @@ object Main {
 //        System.err.println(f)
 //    }
 
+
+
     val objectName = args(0).split('.').head
 
-    val externObject = ExternObject(objectName, parsed.get.value)
+    val definitions = parsed.get.value.flatten
 
-    new PrintWriter(s"${externObject.name}.scala") { write(externObject.toNative); close() }
+    val externObject = ExternObject(objectName, DefinitionsUtils.withoutUselessNameAliases(definitions))
+
+    new PrintWriter(s"${externObject.name}.scala") { write(externObject.toString); close() }
   }
 }

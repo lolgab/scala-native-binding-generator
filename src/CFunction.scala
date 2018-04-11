@@ -1,14 +1,14 @@
-case class CFunction(returnType: VariableType, name: String, parameters: Seq[Parameter])
+case class CFunction(returnType: VariableType, name: Identifier, parameters: Seq[Parameter])
     extends Definition {
-  def toNative: String = {
+  override def toString: String = {
     val parametersOutput =
       if (parameters.isEmpty)
         if (returnType.resType == "Unit") "()" else ""
       else {
         val parameterOutput =
-          parameters.zipWithIndex.map { case (p, i) => s"${p.nameString(i)}: ${p.t.toNative}" }.mkString(", ")
+          parameters.zipWithIndex.map { case (p, i) => s"${p.nameIdentifier(i)}: ${p.t}" }.mkString(", ")
         s"($parameterOutput)"
       }
-    s"def $name$parametersOutput: ${returnType.toNative} = extern"
+    s"def $name$parametersOutput: $returnType = extern"
   }
 }

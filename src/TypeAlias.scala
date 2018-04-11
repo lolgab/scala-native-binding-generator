@@ -1,3 +1,3 @@
-case class TypeAlias(tpe: VariableType, name: String) extends Definition {
-  override def toNative: String = s"type $name = ${tpe.toNative}"
+case class TypeAlias(tpe: VariableType, name: Identifier) extends Definition {
+  override def toString: String = s"type $name = $tpe"
 }
