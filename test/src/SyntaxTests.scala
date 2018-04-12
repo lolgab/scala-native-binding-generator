@@ -6,11 +6,11 @@ import utest._
 object SyntaxTests extends TestSuite {
   import WithSpaces._
 
-  def toNative(parser: Parser[Definition, Char, String], s: String): String =
-    parser.parse(s).get.value.toNative
+  def toNative(parser: Parser[HasNative, Char, String], s: String): String =
+    parser.parse(s).get.value.toString
 
   def toNativeOps(parser: Parser[HasOps, Char, String], s: String): String =
-    parser.parse(s).get.value.toNativeOps
+    parser.parse(s).get.value.opsString
 
   def tests = Tests {
     "pointer type" - {
@@ -32,6 +32,12 @@ object SyntaxTests extends TestSuite {
       val res      = toNative(variableType, s)
       val shouldBe = "CLong"
       assert(shouldBe == res)
+    }
+
+    "function parameter" - {
+      val s = "void ( * PFNGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);"
+      val res = functionPtrParameter.parse(s).get.value.t.toString
+      println(res)
     }
 
     "function definition" - {
@@ -82,7 +88,7 @@ object SyntaxTests extends TestSuite {
           |]""".stripMargin
 
       val shouldBeNativeOps =
-        """implicit class FooOps(ptr: Ptr[Foo]) extends AnyVal {
+        """implicit class FooOps(val ptr: Ptr[Foo]) extends AnyVal {
           |  def a: CInt = !ptr._1
           |  def b: CLong = !ptr._2
           |  def c: my_type = !ptr._3
@@ -105,7 +111,7 @@ object SyntaxTests extends TestSuite {
       }
 
       "extern object" - {
-        val res               = ExternObject("MyObj", expr.parse(struct).get.value).toNative
+        val res               = ExternObject("MyObj", expr.parse(struct).get.value).toString
         def indent(s: String) = s.split('\n').map(s => s"  $s").mkString("\n")
 
         val shouldBeExternObject =
