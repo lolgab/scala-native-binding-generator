@@ -1,13 +1,17 @@
 sealed trait Type extends HasNative {
-  def cyclicReference: Boolean
+  def HasReferencedTypes: Boolean
+  def withByteString: String
 }
 
-case class VariableType(types: Seq[String], pointerCount: Int, cyclicReference: Boolean = false)
+case class VariableType(types: Seq[String],
+                        pointerCount: Int,
+                        cyclicReferencedTypes: Seq[Identifier] = Seq())
     extends Type {
   val resType = {
     implicit val seq: Seq[String]                  = types.sorted
     def cmp(s: String*)(implicit seq: Seq[String]) = s.sorted == seq
     if (cmp("void") && pointerCount > 0) "Byte"
+    else if (cmp("uintptr_t")) "Byte"
     else if (cmp("void")) "Unit"
     else if (cmp("bool")) "CBool"
     else if (cmp("char") && pointerCount > 0) "CString"
@@ -34,23 +38,34 @@ case class VariableType(types: Seq[String], pointerCount: Int, cyclicReference: 
     else seq.mkString(" ")
   }
 
-  val ptrCount = if (resType == "CString") pointerCount - 1 else pointerCount
+  val ptrCount =
+    if (resType == "CString") pointerCount - 1
+    else if (types == Seq("uintptr_t")) pointerCount + 1
+    else pointerCount
+
   (resType, ptrCount)
 
-  override def toString: String = {
-    def loop(s: String, i: Int): String =
-      if (i == 0) s
-      else loop(s"Ptr[$s]", i - 1)
-    loop(resType, ptrCount)
-  }
+  private def loop(s: String, i: Int): String =
+    if (i == 0) s else loop(s"Ptr[$s]", i - 1)
+
+  override def withByteString: String =
+    loop(if (HasReferencedTypes) "Byte" else resType, ptrCount)
+
+  override def toString: String = loop(resType, ptrCount)
+
+  def HasReferencedTypes: Boolean = cyclicReferencedTypes.exists(_.name == resType)
 }
 
 case class FunctionType(returnType: Type, parameters: Seq[Type]) extends Type {
-  override def cyclicReference: Boolean =
-    parameters.foldLeft(returnType.cyclicReference)(_ || _.cyclicReference)
-
-  def parametersString = parameters.map(_.toString).mkString(", ")
+  def parametersString: String         = parameters.map(_.toString).mkString(", ")
+  def parametersWithByteString: String = parameters.map(_.withByteString).mkString(", ")
 
   override def toString: String =
     s"CFunctionPtr${parameters.length}[$parametersString, $returnType]"
+
+  override def withByteString: String =
+    s"CFunctionPtr${parameters.length}[$parametersWithByteString, ${returnType.withByteString}]"
+
+  override def HasReferencedTypes: Boolean =
+    returnType.HasReferencedTypes || parameters.foldLeft(false)(_ || _.HasReferencedTypes)
 }

@@ -23,11 +23,9 @@ object Main {
 //        System.err.println(f)
 //    }
 
-
-
     val objectName = args(0).split('.').head
 
-    val definitions = parsed.get.value.flatten
+    val definitions = parsed.get.value
 
     val externObject = ExternObject(objectName, DefinitionsUtils.withoutUselessNameAliases(definitions))
 

@@ -1,15 +1,36 @@
 object DefinitionsUtils {
   def withoutUselessNameAliases(definitions: Seq[Definition]): Seq[Definition] = {
-    val (selected, others) = definitions.partition(_ match {
-      case NameAlias(a, b) if a == b => true
-      case _ => false
-    })
+    val p1 = definitions
+      .map {
+        case alias: NameAlias =>
+          if (definitions
+                .filter(_ != alias)
+                .forall(d => d.name != alias.name)) ExternTypeAlias(alias.newName)
+          else alias
+        case d => d
+      }
+      .filter {
+        case NameAlias(a, b) if a == b => false
+        case _                         => true
+      }
+    withoutCyclicDefinitions(p1)
+  }
 
-    val aliases = selected.map(_.asInstanceOf[NameAlias])
-
-    val extern = aliases.filter{ a =>
-      definitions.filter(_ != a).forall(_.name != a.newName)
+  def withoutCyclicDefinitions(definitions: Seq[Definition]): Seq[Definition] = {
+    def withCyclicReferenceType(t: Type, reference: Identifier): Type = t match {
+      case v: VariableType =>
+        v.copy(cyclicReferencedTypes = v.cyclicReferencedTypes :+ reference)
+      case FunctionType(returnType, parameters) =>
+        FunctionType(withCyclicReferenceType(returnType, reference),
+                     parameters.map(withCyclicReferenceType(_, reference)))
     }
-    extern.map(na => ExternTypeAlias(na.newName)) ++ others
+
+    definitions.map {
+      case s: Struct =>
+        val res = s.copy(
+          components = s.components.map(c => c.copy(t = withCyclicReferenceType(c.t, s.name))))
+        res
+      case d => d
+    }
   }
 }
