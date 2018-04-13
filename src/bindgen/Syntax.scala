@@ -1,4 +1,7 @@
+package bindgen
+
 import fastparse.WhitespaceApi
+import fastparse.noApi._
 
 object WithSpaces {
   import fastparse.noApi._
@@ -15,12 +18,14 @@ object WithSpaces {
   val pointer = P("*".rep.!.map(_.count(_ == '*')))
 
   val variableType =
-    P((id.! ~ (id.! ~ &(id)).rep) ~ pointer).map(t => VariableType(t._1 +: t._2, t._3))
+    P(("struct" | "enum").? ~ (id.! ~ (id.! ~ &(id)).rep) ~ pointer).map(t =>
+      VariableType(t._1 +: t._2, t._3))
 
-  val functionPtr = P(variableType ~ "(" ~ "*" ~ identifier ~ ")" ~ "(" ~ functionParameters ~ ")").map {
-    case (returnType, name, parameters) =>
-      (FunctionType(returnType, parameters.map(_.t)), Some(name))
-  }
+  val functionPtr =
+    P(variableType ~ "(" ~ "*" ~ identifier ~ ")" ~ "(" ~ functionParameters ~ ")").map {
+      case (returnType, name, parameters) =>
+        (FunctionType(returnType, parameters.map(_.t)), Some(name))
+    }
 
   val functionPtrParameter = functionPtr.map(Parameter.tupled)
 
@@ -46,7 +51,7 @@ object WithSpaces {
       }
 
   val functionDefinition: Parser[Definition] =
-    P("extern".? ~ variableType ~ identifier ~ "(" ~ (voidParameter | functionParameters) ~ ")")
+    P(variableType ~ identifier ~ "(" ~ (voidParameter | functionParameters) ~ ")")
       .map(CFunction.tupled)
 
   val structComponent = P(functionParameter ~ ";")
@@ -57,19 +62,26 @@ object WithSpaces {
 
   val enumBraces = P("{" ~ enumComponent.rep ~ "}")
 
-  val structDefinition: Parser[Struct] =
-    P("struct" ~ optIdentifier ~ structBraces).map(Struct.tupled) // TODO treat no name Structs
+  val emptyStructDefinition =
+    P("struct" ~ identifier).map(TypeAlias(_, ExternDefinition))
+
+  val fullStructDefinition: Parser[Struct] =
+    P("struct" ~ optIdentifier ~ structBraces).map(Struct.tupled)
+
+  val structDefinition = P(fullStructDefinition | emptyStructDefinition)
 
   val enumDefinition: Parser[Definition] =
     P("enum" ~ optIdentifier ~ enumBraces).map(Enum.tupled)
 
-  val typedefableDefinition=  P(
+  val typedefableDefinition = P(
+    variableType |
       structDefinition |
-      enumDefinition |
-      variableType
+      enumDefinition
   )
 
-  val typeDef = P("typedef" ~ typedefableDefinition ~ identifier).map(t => Typedef(t._2, t._1))
+  val typeDef = P(
+
+    "typedef" ~ typedefableDefinition ~ identifier).map(t => TypeAlias(t._2, t._1))
 
 //  val typeDefStructDefinition: Parser[Seq[Definition]] =
 //    P("typedef" ~ "struct" ~ identifier.? ~ structBraces ~ identifier ~ ";").map(t =>
@@ -81,7 +93,7 @@ object WithSpaces {
   val typeDefFunctionPtrDefinition: Parser[Definition] =
     P("typedef" ~ functionPtr).map {
       case (fType, optIde) =>
-        FunctionPtrDefinition(fType, optIde.get) // TODO Unsafe!
+        TypeAlias(optIde.get, fType) // TODO Unsafe!
     }
 
 //  val typeDefEnumDefinition: Parser[Seq[Definition]] =
@@ -93,7 +105,7 @@ object WithSpaces {
 
   val typeDefStructEnumAlias: Parser[Definition] = // TODO DRY it.
     P("typedef" ~ ("struct" | "enum") ~ identifier ~ identifier)
-      .map(NameAlias.tupled)
+      .map(t => TypeAlias(t._2, t._1))
 
 //  val typeDefTypeAlias: Parser[Seq[Definition]] =
 //    P("typedef" ~ variableType ~ identifier).map(TypeAlias.tupled).map(Seq(_))
@@ -124,6 +136,6 @@ object WithoutSpaces {
   val multiLineComment  = P("/*" ~ (!"*/" ~ AnyChar).rep ~ "*/")
   val singleLineComment = P("//" ~ (!"\n" ~ AnyChar).rep ~ ("\n" | End))
   val comment           = P(singleLineComment | multiLineComment)
-  val keyword           = P("const")
+  val keyword           = P("const" |  "extern")
   val space             = P(" " | "\t" | "\n" | comment | keyword).rep
 }

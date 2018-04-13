@@ -1,19 +1,27 @@
+package bindgen
+
 object DefinitionsUtils {
+  def transformed(definitions: Seq[Definition]): Seq[Definition] = {
+    val r1 = withoutUselessNameAliases(definitions)
+    val r2 = withoutCyclicDefinitions(r1)
+    r2
+  }
+
   def withoutUselessNameAliases(definitions: Seq[Definition]): Seq[Definition] = {
-    val p1 = definitions
+    definitions
       .map {
-        case alias: NameAlias =>
+        case alias: TypeAlias =>
           if (definitions
                 .filter(_ != alias)
-                .forall(d => d.name != alias.name)) ExternTypeAlias(alias.newName)
+                .forall(d => d.name != alias.name)) alias.copy(content = ExternDefinition)
           else alias
-        case d => d
+        case s: Struct => TypeAlias(s.name, s)
+        case d         => d
       }
       .filter {
-        case NameAlias(a, b) if a == b => false
-        case _                         => true
+        case TypeAlias(a, Identifier(b)) if a == b => false
+        case _                                     => true
       }
-    withoutCyclicDefinitions(p1)
   }
 
   def withoutCyclicDefinitions(definitions: Seq[Definition]): Seq[Definition] = {

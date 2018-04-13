@@ -1,0 +1,3 @@
+package bindgen
+
+trait HasNative

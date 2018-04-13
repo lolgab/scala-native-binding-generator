@@ -1,6 +1,6 @@
-import java.io.PrintWriter
+package bindgen
 
-import fastparse.core.Parsed.{Failure, Success}
+import java.io.PrintWriter
 
 import scala.io.Source
 
@@ -27,7 +27,7 @@ object Main {
 
     val definitions = parsed.get.value
 
-    val externObject = ExternObject(objectName, DefinitionsUtils.withoutUselessNameAliases(definitions))
+    val externObject = ExternObject(objectName, DefinitionsUtils.transformed(definitions))
 
     new PrintWriter(s"${externObject.name}.scala") { write(externObject.toString); close() }
   }

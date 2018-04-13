@@ -1,3 +1,5 @@
+package bindgen
+
 import java.io.PrintWriter
 
 import fastparse.core.Parser
@@ -35,9 +37,19 @@ object SyntaxTests extends TestSuite {
     }
 
     "function parameter" - {
-      val s = "void ( * PFNGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);"
+      val s =
+        "void ( * PFNGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);"
       val res = functionPtrParameter.parse(s).get.value.t.toString
-      println(res)
+      val shouldBe = "CFunctionPtr6[GLenum, GLuint, GLuint, GLsizei, GLenum, Ptr[GLvoid], Unit]"
+      assert(res == shouldBe)
+    }
+
+    "extern function definition" - {
+      val s   = "extern intmax_t imaxabs (intmax_t __n) ;"
+      val res = toNative(functionDefinition, s)
+      val shouldBe =
+        "def imaxabs(__n: intmax_t): intmax_t = extern"
+      assert(res == shouldBe)
     }
 
     "function definition" - {
@@ -57,9 +69,10 @@ object SyntaxTests extends TestSuite {
     }
 
     "function definition" - {
-      val s = "extern void uiQueueMain(void (*f)(void *data), void *data);"
+      val s   = "extern void uiQueueMain(void (*f)(void *data), void *data);"
       val res = toNative(functionDefinition, s)
-      val shouldBe = "def uiQueueMain(f: CFunctionPtr1[Ptr[Byte], Unit], data: Ptr[Byte]): Unit = extern"
+      val shouldBe =
+        "def uiQueueMain(f: CFunctionPtr1[Ptr[Byte], Unit], data: Ptr[Byte]): Unit = extern"
       assert(res == shouldBe)
     }
 
@@ -80,7 +93,7 @@ object SyntaxTests extends TestSuite {
                      |};""".stripMargin
 
       val shouldBeNative =
-        """type Foo = CStruct4[
+        """CStruct4[
           |  CInt,
           |  CLong,
           |  my_type,
@@ -106,12 +119,12 @@ object SyntaxTests extends TestSuite {
       }
 
       "implicit class in the ops object" - {
-        val res = toNativeOps(structDefinition, struct)
+        val res = toNativeOps(fullStructDefinition, struct)
         assert(res == shouldBeNativeOps)
       }
 
       "extern object" - {
-        val res               = ExternObject("MyObj", expr.parse(struct).get.value).toString
+        val res               = ExternObject("MyObj", DefinitionsUtils.transformed(expr.parse(struct).get.value)).toString
         def indent(s: String) = s.split('\n').map(s => s"  $s").mkString("\n")
 
         val shouldBeExternObject =
@@ -119,7 +132,7 @@ object SyntaxTests extends TestSuite {
           |
           |@extern
           |object MyObj {
-          |${indent(shouldBeNative)}
+          |${indent("type Foo = " + shouldBeNative)}
           |}
           |
           |object MyObjOps {
@@ -129,6 +142,18 @@ object SyntaxTests extends TestSuite {
           |}""".stripMargin
 
         assert(res == shouldBeExternObject)
+      }
+
+      "struct variable" - {
+        val res      = toNative(variableType, "struct __GLsync *")
+        val shouldBe = "Ptr[__GLsync]"
+        assert(res == shouldBe)
+      }
+
+      "typedef struct with pointer" - {
+        val res      = toNative(typeDef, "typedef struct __GLsync *GLsync")
+        val shouldBe = "type GLsync = Ptr[__GLsync]"
+        assert(res == shouldBe)
       }
     }
   }

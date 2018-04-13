@@ -1,3 +1,5 @@
+package bindgen
+
 case class Identifier(name: String) extends HasNative {
   override def toString: String = if(Identifier.scalaKeywods.contains(name)) s"`$name`" else name
 }

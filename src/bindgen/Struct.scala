@@ -1,3 +1,5 @@
+package bindgen
+
 case class Struct(name: Identifier, components: Seq[Parameter]) extends Definition with HasOps {
   def componentsString: String = components.map(c => s"  ${c.t.withByteString}").mkString(",\n")
 
@@ -18,7 +20,7 @@ case class Struct(name: Identifier, components: Seq[Parameter]) extends Definiti
       else ""}"
   }
 
-  override def toString = s"type $name = CStruct${components.length}[\n$componentsString\n]"
+  override def toString = s"CStruct${components.length}[\n$componentsString\n]"
 
   def opsString: String =
     s"""implicit class ${name}Ops(val ptr: Ptr[$name]) extends AnyVal {

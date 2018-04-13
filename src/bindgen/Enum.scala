@@ -1,3 +1,5 @@
+package bindgen
+
 case class Enum(name: Identifier, components: Seq[(Identifier, Option[String])])
     extends Definition
     with HasOps {

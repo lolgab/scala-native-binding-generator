@@ -1,3 +1,5 @@
+package bindgen
+
 case class CFunction(returnType: VariableType, name: Identifier, parameters: Seq[Parameter])
     extends Definition {
   override def toString: String = {

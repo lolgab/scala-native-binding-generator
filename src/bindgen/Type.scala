@@ -1,3 +1,5 @@
+package bindgen
+
 sealed trait Type extends HasNative {
   def HasReferencedTypes: Boolean
   def withByteString: String
@@ -60,10 +62,10 @@ case class FunctionType(returnType: Type, parameters: Seq[Type]) extends Type {
   def parametersString: String         = parameters.map(_.toString).mkString(", ")
   def parametersWithByteString: String = parameters.map(_.withByteString).mkString(", ")
 
-  override def toString: String =
+  override def toString =
     s"CFunctionPtr${parameters.length}[$parametersString, $returnType]"
 
-  override def withByteString: String =
+  override def withByteString =
     s"CFunctionPtr${parameters.length}[$parametersWithByteString, ${returnType.withByteString}]"
 
   override def HasReferencedTypes: Boolean =
