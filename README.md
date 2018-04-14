@@ -10,9 +10,17 @@ After removing these includes you can preprocess the header file with gcc:
 ```gcc -E -P header.h -o output.h```
 
 For example with libui:
-```gcc -E -p ui.h -o Ui.h```
+```gcc -E -P ui.h -o Ui.h```
 
 then you can process the preprocessed header file with:
 ```mill _.run Ui.h```
 
 It will create a `Ui.scala` file.
+
+### OpenGL
+To parse openGL header file you have to remove some macros with gcc:
+```
+gcc -E -P -D '__attribute__(ARGS)='\
+-D '__restrict' /usr/include/GL/gl.h -o gl-h
+mill _.run gl.h
+```
