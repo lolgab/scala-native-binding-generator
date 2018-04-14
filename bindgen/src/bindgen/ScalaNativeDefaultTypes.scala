@@ -1,0 +1,5 @@
+package bindgen
+
+class ScalaNativeDefaultTypes {
+
+}
