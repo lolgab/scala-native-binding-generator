@@ -20,7 +20,6 @@ It will create a `Ui.scala` file.
 ### OpenGL
 To parse openGL header file you have to remove some macros with gcc:
 ```
-gcc -E -P -D '__attribute__(ARGS)='\
--D '__restrict' /usr/include/GL/gl.h -o gl-h
+gcc -E -P -D '__attribute__(ARGS)=' -D '__restrict' /usr/include/GL/gl.h -o gl-h
 mill _.run gl.h
 ```
