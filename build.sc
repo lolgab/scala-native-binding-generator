@@ -1,6 +1,5 @@
 import mill._
 import mill.scalalib._
-import ammonite.ops._
 
 trait Common extends ScalaModule {
   def scalaVersion = "2.12.4"
@@ -12,15 +11,14 @@ trait Common extends ScalaModule {
   )
 }
 
-object build extends Common {
-  def millSourcePath = pwd
+object bindgen extends Common {
 
   def mainClass = Some("bindgen.Main")
 
   object test extends Tests {
     def testFrameworks = Seq("utest.runner.Framework")
 
-    def moduleDeps = Seq(build)
+    def moduleDeps = Seq(bindgen)
 
     def ivyDeps = super.ivyDeps() ++ Agg(
       ivy"com.lihaoyi::utest:0.6.4"

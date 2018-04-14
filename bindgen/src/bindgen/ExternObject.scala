@@ -1,7 +1,7 @@
 package bindgen
 
 case class ExternObject(name: String, definitions: Seq[Definition]) {
-  private def hasOpsDefinitions: Seq[HasOps] =
+  private lazy val hasOpsDefinitions: Seq[HasOps] =
 //    definitions.filter(_.isInstanceOf[HasOps]).map(_.asInstanceOf[HasOps])
     definitions
       .filter {
@@ -11,8 +11,21 @@ case class ExternObject(name: String, definitions: Seq[Definition]) {
       }
       .map {
         case TypeAlias(name, ops: HasOps) => ops
-        case d                           => d
-      }.asInstanceOf[Seq[HasOps]]
+        case d                            => d
+      }
+      .asInstanceOf[Seq[HasOps]]
+
+  private def obsObject: String =
+    s"""
+       |object ${name}Ops {
+       |import $name._
+       |
+       |${hasOpsDefinitions
+         .map(d => s"${d.opsString}")
+         .flatMap(_.split('\n'))
+         .map(l => s"  $l")
+         .mkString("\n")}
+       |}""".stripMargin
 
   override def toString: String =
     s"""import scalanative.native._
@@ -21,14 +34,5 @@ case class ExternObject(name: String, definitions: Seq[Definition]) {
        |object $name {
        |${definitions.map(_.toString).flatMap(_.split('\n')).map(l => s"  $l").mkString("\n")}
        |}
-       |
-       |object ${name}Ops {
-       |  import $name._
-       |
-       |${hasOpsDefinitions
-         .map(d => s"${d.opsString}")
-         .flatMap(_.split('\n'))
-         .map(l => s"  $l")
-         .mkString("\n")}
-       |}""".stripMargin
+       |${if (hasOpsDefinitions.nonEmpty) obsObject else ""}""".stripMargin
 }

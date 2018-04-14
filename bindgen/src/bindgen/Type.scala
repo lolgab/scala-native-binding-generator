@@ -21,7 +21,9 @@ case class VariableType(types: Seq[String],
     else if (cmp("char", "signed")) "CSignedChar"
     else if (cmp("char", "unsigned")) "CUnsignedChar"
     else if (cmp("short")) "CShort"
+    else if (cmp("short", "int")) "CShort"
     else if (cmp("unsigned", "short")) "CUnsignedShort"
+    else if (cmp("unsigned", "short", "int")) "CUnsignedShort"
     else if (cmp("int")) "CInt"
     else if (cmp("long", "int")) "CLongInt"
     else if (cmp("unsigned", "int") || cmp("uint32_t")) "CUnsignedInt"
@@ -37,6 +39,8 @@ case class VariableType(types: Seq[String],
     else if (cmp("char32_t")) "CChar32"
     else if (cmp("float")) "CFloat"
     else if (cmp("double")) "CDouble"
+    else if (cmp("long","double")) "CDouble" //TODO it is fake! should not exist
+
     else seq.mkString(" ")
   }
 

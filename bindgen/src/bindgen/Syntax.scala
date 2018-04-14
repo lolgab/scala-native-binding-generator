@@ -31,7 +31,7 @@ object WithSpaces {
 
   val array = P("[" ~ digit.rep.! ~ "]").map(_.toInt)
 
-  val variableParameter = P(variableType ~ identifier.? ~ array.?)
+  val variableParameter = P(variableType /*~ digit.rep */~ identifier.? ~ array.?)
     .map(
       t =>
         if (t._3.isDefined)
@@ -79,16 +79,7 @@ object WithSpaces {
       enumDefinition
   )
 
-  val typeDef = P(
-
-    "typedef" ~ typedefableDefinition ~ identifier).map(t => TypeAlias(t._2, t._1))
-
-//  val typeDefStructDefinition: Parser[Seq[Definition]] =
-//    P("typedef" ~ "struct" ~ identifier.? ~ structBraces ~ identifier ~ ";").map(t =>
-//      t._1 match {
-//        case Some(name) => Seq(Struct(name, t._2), NameAlias(name, t._3))
-//        case None       => Seq(Struct(t._3, t._2))
-//    })
+  val typeDef = P("typedef" ~ typedefableDefinition ~ identifier).map(t => TypeAlias(t._2, t._1))
 
   val typeDefFunctionPtrDefinition: Parser[Definition] =
     P("typedef" ~ functionPtr).map {
@@ -96,30 +87,17 @@ object WithSpaces {
         TypeAlias(optIde.get, fType) // TODO Unsafe!
     }
 
-//  val typeDefEnumDefinition: Parser[Seq[Definition]] =
-//    P("typedef" ~ "enum" ~ optIdentifier ~ enumBraces ~ identifier ~ ";").map(t =>
-//      t._1 match {
-//        case Identifier("") => Seq(Enum(t._3, t._2))
-//        case name           => Seq(Enum(t._1, t._2), NameAlias(name, t._3))
-//    })
-
   val typeDefStructEnumAlias: Parser[Definition] = // TODO DRY it.
     P("typedef" ~ ("struct" | "enum") ~ identifier ~ identifier)
       .map(t => TypeAlias(t._2, t._1))
 
-//  val typeDefTypeAlias: Parser[Seq[Definition]] =
-//    P("typedef" ~ variableType ~ identifier).map(TypeAlias.tupled).map(Seq(_))
-
   val exprContent: Parser[Definition] = P(
     functionDefinition |
-//      typeDefStructDefinition |
-//      typeDefEnumDefinition |
       structDefinition |
       enumDefinition |
       typeDefFunctionPtrDefinition |
       typeDefStructEnumAlias |
       typeDef
-    //      typeDefTypeAlias |
   )
 
   val expr = P(WithoutSpaces.space ~ (exprContent ~ ";").rep ~ WithoutSpaces.space ~ End)
@@ -136,6 +114,6 @@ object WithoutSpaces {
   val multiLineComment  = P("/*" ~ (!"*/" ~ AnyChar).rep ~ "*/")
   val singleLineComment = P("//" ~ (!"\n" ~ AnyChar).rep ~ ("\n" | End))
   val comment           = P(singleLineComment | multiLineComment)
-  val keyword           = P("const" |  "extern")
+  val keyword           = P("const" | "extern")
   val space             = P(" " | "\t" | "\n" | comment | keyword).rep
 }
