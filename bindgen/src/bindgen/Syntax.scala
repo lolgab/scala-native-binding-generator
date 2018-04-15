@@ -31,7 +31,7 @@ object WithSpaces {
 
   val array = P("[" ~ digit.rep.! ~ "]").map(_.toInt)
 
-  val variableParameter = P(variableType /*~ digit.rep */~ identifier.? ~ array.?)
+  val variableParameter = P(variableType ~ identifier.? ~ array.?)
     .map(
       t =>
         if (t._3.isDefined)
@@ -39,7 +39,9 @@ object WithSpaces {
         else (t._1, t._2))
     .map(Parameter.tupled)
 
-  val functionParameter = P(functionPtrParameter | variableParameter)
+  val varargsParameter = P("...").map(_ => Parameter(Vararg, Some(Identifier("args"))))
+
+  val functionParameter = P(functionPtrParameter | variableParameter | varargsParameter)
 
   val voidParameter = P("void" ~ &(")")).map(_ => Seq.empty[Parameter])
 
@@ -56,11 +58,14 @@ object WithSpaces {
 
   val structComponent = P(functionParameter ~ ";")
 
-  val enumComponent = P(identifier ~ ("=" ~ (!"," ~ AnyChar).rep.!).? ~ ",")
+  val enumComponent = P(identifier ~ ("=" ~ MathExpression.expr).?)
 
   val structBraces = P("{" ~ structComponent.rep ~ "}")
 
-  val enumBraces = P("{" ~ enumComponent.rep ~ "}")
+  val enumBraces = P("{" ~ (enumComponent ~ ",").rep ~ (enumComponent ~ ",".?).? ~ "}").map{
+    case (seq, Some(e)) => seq :+ e
+    case (seq, None) => seq
+  }
 
   val emptyStructDefinition =
     P("struct" ~ identifier).map(TypeAlias(_, ExternDefinition))

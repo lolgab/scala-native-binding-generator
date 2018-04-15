@@ -1,31 +1,29 @@
 package bindgen
 
-case class Enum(name: Identifier, components: Seq[(Identifier, Option[String])])
+case class Enum(name: Identifier, components: Seq[(Identifier, Option[Int])])
     extends Definition
     with HasOps {
   def componentsString = {
-    var i          = 0
-    var lastResult = ""
+    var i = 0
     components
       .map {
-        case (name, optResult) =>
+        case (n, optResult) =>
           optResult match {
             case None =>
               val ret =
-                if (lastResult == "") s"val $name = $i"
-                else s"val $name = ($lastResult) + $i"
+                s"val $n = $i"
               i += 1
               ret
             case Some(result) =>
-              val ret = s"val $name = $result"
-              i = 0
+              val ret = s"val $n = $result"
+              i = result + 1
               ret
           }
       }
       .map(s =>
         name match {
-          case Identifier("")    => s"  $s"
-          case s => s
+          case Identifier("") => s"  $s"
+          case s              => s
       })
       .mkString("\n")
   }
@@ -44,7 +42,7 @@ case class Enum(name: Identifier, components: Seq[(Identifier, Option[String])])
       case Identifier("") =>
         val sub = commonSubString
         if (sub.length > 2) sub else s"Enum${hashCode()}"
-          s"""object $sub {
+        s"""object $sub {
              |$componentsString
              |}""".stripMargin
       case n =>

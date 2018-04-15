@@ -38,6 +38,7 @@ object DefinitionsUtils {
       case FunctionType(returnType, parameters) =>
         FunctionType(withCyclicReferenceType(returnType, reference),
                      parameters.map(withCyclicReferenceType(_, reference)))
+      case t => t
     }
 
     definitions.map {

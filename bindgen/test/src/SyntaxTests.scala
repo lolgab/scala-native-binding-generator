@@ -39,7 +39,7 @@ object SyntaxTests extends TestSuite {
     "function parameter" - {
       val s =
         "void ( * PFNGLDRAWRANGEELEMENTSPROC) (GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);"
-      val res = functionPtrParameter.parse(s).get.value.t.toString
+      val res      = functionPtrParameter.parse(s).get.value.t.toString
       val shouldBe = "CFunctionPtr6[GLenum, GLuint, GLuint, GLsizei, GLenum, Ptr[GLvoid], Unit]"
       assert(res == shouldBe)
     }
@@ -124,7 +124,8 @@ object SyntaxTests extends TestSuite {
       }
 
       "extern object" - {
-        val res               = ExternObject("MyObj", DefinitionsUtils.transformed(expr.parse(struct).get.value)).toString
+        val res =
+          ExternObject("MyObj", DefinitionsUtils.transformed(expr.parse(struct).get.value)).toString
         def indent(s: String) = s.split('\n').map(s => s"  $s").mkString("\n")
 
         val shouldBeExternObject =
@@ -153,6 +154,46 @@ object SyntaxTests extends TestSuite {
       "typedef struct with pointer" - {
         val res      = toNative(typeDef, "typedef struct __GLsync *GLsync")
         val shouldBe = "type GLsync = Ptr[__GLsync]"
+        assert(res == shouldBe)
+      }
+
+      "anonymous enum without trailing comma" - {
+        val res = toNativeOps(
+          enumDefinition.asInstanceOf[Parser[HasOps, Char, String]],
+          """enum {
+            |  d_ERR_UNKNOWN,
+            |  d_ERR_IASSERT,
+            |  d_ERR_UASSERT,
+            |  d_ERR_LCP
+            |};""".stripMargin
+        )
+        val shouldBe =
+          """object d_ERR_ {
+            |  val d_ERR_UNKNOWN = 0
+            |  val d_ERR_IASSERT = 1
+            |  val d_ERR_UASSERT = 2
+            |  val d_ERR_LCP = 3
+            |}""".stripMargin
+        assert(res == shouldBe)
+      }
+
+      "anonymous enum with trailing comma and number" - {
+        val res = toNativeOps(
+          enumDefinition.asInstanceOf[Parser[HasOps, Char, String]],
+          """enum {
+            |  d_ERR_UNKNOWN,
+            |  d_ERR_IASSERT = 10,
+            |  d_ERR_UASSERT,
+            |  d_ERR_LCP,
+            |};""".stripMargin
+        )
+        val shouldBe =
+          """object d_ERR_ {
+            |  val d_ERR_UNKNOWN = 0
+            |  val d_ERR_IASSERT = 10
+            |  val d_ERR_UASSERT = 11
+            |  val d_ERR_LCP = 12
+            |}""".stripMargin
         assert(res == shouldBe)
       }
     }

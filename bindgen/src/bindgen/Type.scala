@@ -39,7 +39,6 @@ case class VariableType(types: Seq[String],
     else if (cmp("char32_t")) "CChar32"
     else if (cmp("float")) "CFloat"
     else if (cmp("double")) "CDouble"
-    else if (cmp("long","double")) "CDouble" //TODO it is fake! should not exist
 
     else seq.mkString(" ")
   }
@@ -74,4 +73,12 @@ case class FunctionType(returnType: Type, parameters: Seq[Type]) extends Type {
 
   override def HasReferencedTypes: Boolean =
     returnType.HasReferencedTypes || parameters.foldLeft(false)(_ || _.HasReferencedTypes)
+}
+
+case object Vararg extends Type {
+  override def HasReferencedTypes: Boolean = false
+
+  override def withByteString: String = toString
+
+  override def toString: String = "CVararg*"
 }
