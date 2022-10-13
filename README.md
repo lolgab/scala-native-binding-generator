@@ -1,5 +1,7 @@
 # scala-native-binding-generator
 
+## **Abandoned: look at [sn-bindgen](https://github.com/indoorvivants/sn-bindgen) for a better alternative** ##
+
 [![Join the chat at https://gitter.im/lolgab/scala-native-binding-generator](https://badges.gitter.im/lolgab/scala-native-binding-generator.svg)](https://gitter.im/lolgab/scala-native-binding-generator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Simple Scala Native binding generator based on FastParse
 
